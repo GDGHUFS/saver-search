@@ -62,3 +62,5 @@ app = FastAPI()
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+# TODO: 검색어와 매직코드가 api를 통해 들어오면 rabbitmq 메시지 소비해서 매직코드 검증. kagi 호출 후 그 결과를 reddis에 저장하여 캐시로 사용함.
