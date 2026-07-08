@@ -7,6 +7,7 @@ from collections.abc import Callable
 import httpx
 
 from src.config import KagiSettings
+from src.model import KagiSearchResponse
 
 
 class KagiSearchError(RuntimeError):
@@ -87,16 +88,7 @@ class KagiSearchClient:
 
         try:
             result = json.loads(b"".join(chunks), parse_constant=_reject_constant)
-            if not isinstance(result, dict):
-                raise ValueError("Kagi response must be a JSON object")
-            if not isinstance(result.get("data"), dict):
-                raise ValueError("Kagi response data must be a JSON object")
-            serialized = json.dumps(
-                result,
-                ensure_ascii=False,
-                allow_nan=False,
-                separators=(",", ":"),
-            )
+            serialized = KagiSearchResponse.model_validate(result).to_result_json()
         except (UnicodeDecodeError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise KagiSearchError("upstream_invalid_response", retryable=False) from exc
         if len(serialized.encode("utf-8")) > self._max_result_bytes:

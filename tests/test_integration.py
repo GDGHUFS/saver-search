@@ -42,7 +42,17 @@ class LocalInfrastructureIntegrationTest(unittest.TestCase):
             transport=httpx.MockTransport(
                 lambda _request: httpx.Response(
                     200,
-                    json={"data": {"search": [{"title": "integration result"}]}},
+                    json={
+                        "meta": {"ms": 1},
+                        "data": {
+                            "search": [
+                                {
+                                    "url": "https://integration.test",
+                                    "title": "integration result",
+                                }
+                            ]
+                        }
+                    },
                 )
             )
         )

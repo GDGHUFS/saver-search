@@ -18,14 +18,38 @@ def settings(*, max_attempts=3):
 
 
 class KagiSearchClientTest(unittest.TestCase):
-    def test_returns_compact_standard_json(self):
+    def test_returns_validated_filtered_json(self):
         requests = []
 
         def handler(request):
             requests.append(request)
             return httpx.Response(
                 200,
-                json={"data": {"search": [{"title": "검색 결과"}]}},
+                json={
+                    "meta": {"ms": 123, "trace": "discarded"},
+                    "data": {
+                        "related_search": [
+                            {"url": "https://related.test", "title": "연관 검색어"}
+                        ],
+                        "search": [
+                            {
+                                "url": "https://result.test",
+                                "title": "검색 결과",
+                                "snippet": "설명",
+                                "image": {
+                                    "url": "https://result.test/image.png",
+                                    "width": 640,
+                                },
+                                "props": {"language": "ko"},
+                            },
+                            {
+                                "url": "https://optional.test",
+                                "title": "선택 필드 없음",
+                            },
+                        ],
+                        "adjacent_question": [{"title": "discarded"}],
+                    },
+                },
             )
 
         http_client = httpx.Client(
@@ -41,8 +65,25 @@ class KagiSearchClientTest(unittest.TestCase):
         result = client.search("hufs 날씨")
 
         self.assertEqual(
-            json.loads(result)["data"]["search"][0]["title"],
-            "검색 결과",
+            json.loads(result),
+            {
+                "meta": {"ms": 123},
+                "data": {
+                    "related_search": [{"title": "연관 검색어"}],
+                    "search": [
+                        {
+                            "url": "https://result.test",
+                            "title": "검색 결과",
+                            "snippet": "설명",
+                            "image": {"url": "https://result.test/image.png"},
+                        },
+                        {
+                            "url": "https://optional.test",
+                            "title": "선택 필드 없음",
+                        },
+                    ],
+                }
+            },
         )
         self.assertEqual(requests[0].method, "POST")
         self.assertEqual(requests[0].url.query, b"")
@@ -59,7 +100,10 @@ class KagiSearchClientTest(unittest.TestCase):
 
         def handler(_request):
             status = next(statuses)
-            return httpx.Response(status, json={"data": {"search": []}})
+            return httpx.Response(
+                status,
+                json={"meta": {"ms": 1}, "data": {"search": []}},
+            )
 
         http_client = httpx.Client(transport=httpx.MockTransport(handler))
         client = KagiSearchClient(
@@ -118,6 +162,28 @@ class KagiSearchClientTest(unittest.TestCase):
         http_client = httpx.Client(
             transport=httpx.MockTransport(
                 lambda _request: httpx.Response(200, json={"data": []})
+            )
+        )
+        client = KagiSearchClient(
+            settings(),
+            max_result_bytes=1024,
+            client=http_client,
+            sleep=lambda _delay: None,
+        )
+
+        with self.assertRaises(KagiSearchError) as raised:
+            client.search("query")
+
+        self.assertEqual(raised.exception.reason_code, "upstream_invalid_response")
+        http_client.close()
+
+    def test_rejects_search_result_without_required_url(self):
+        http_client = httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _request: httpx.Response(
+                    200,
+                    json={"data": {"search": [{"title": "검색 결과"}]}},
+                )
             )
         )
         client = KagiSearchClient(

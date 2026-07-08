@@ -4,6 +4,25 @@ SAVER backend가 RabbitMQ로 발행한 검색 작업을 소비하고, Kagi Searc
 
 Kagi v1 Search API에는 Bearer 인증과 `{"query": "...", "workflow": "search"}` JSON body를 사용하는 `POST /api/v1/search`로 요청한다.
 
+worker는 Kagi 응답을 검증하고 필요한 필드만 다음 형태로 Redis에 저장한다. 연관 검색어의 `title`, 검색 결과의 필수 `url`/`title`과 선택 `snippet`/`image` 외 필드는 저장하지 않는다.
+
+```json
+{
+  "meta": {"ms": 123},
+  "data": {
+    "related_search": [{"title": "연관 검색어"}],
+    "search": [
+      {
+        "url": "https://example.com",
+        "title": "검색 결과",
+        "snippet": "선택 설명",
+        "image": {"url": "https://example.com/image.png"}
+      }
+    ]
+  }
+}
+```
+
 ## 실행
 
 Python 의존성을 설치하고 저장소 루트의 `.env`에 최소한 `APIKEY`를 설정한다.
