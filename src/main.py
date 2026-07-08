@@ -24,7 +24,11 @@ def run() -> int:
         settings = WorkerSettings.from_env()
     except ConfigurationError as exc:
         logging.basicConfig(level=logging.ERROR, stream=sys.stderr)
-        logging.error("worker_configuration_invalid error=%s", type(exc).__name__)
+        logging.error(
+            "worker_configuration_invalid error=%s detail=%s",
+            type(exc).__name__,
+            exc,
+        )
         return 2
 
     configure_logging(settings.log_level)
