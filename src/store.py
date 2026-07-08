@@ -72,11 +72,13 @@ class RedisResultStore:
         if len(raw_result.encode("utf-8")) > self._max_result_bytes:
             return False
         try:
-            json.loads(
+            parsed = json.loads(
                 raw_result,
                 parse_constant=lambda _value: (_ for _ in ()).throw(ValueError()),
             )
         except (TypeError, ValueError, json.JSONDecodeError):
+            return False
+        if not isinstance(parsed, dict) or "meta" not in parsed or "data" not in parsed:
             return False
         return True
 
