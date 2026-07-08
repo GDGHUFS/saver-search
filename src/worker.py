@@ -88,14 +88,7 @@ class SearchWorker:
                 job_ref,
                 type(exc).__name__,
             )
-            self._finish_failed(
-                channel,
-                delivery_tag,
-                command.query_hash,
-                lease_token,
-                "worker_internal_error",
-            )
-            return
+            raise
 
         try:
             stored = self._store.complete(command.query_hash, lease_token, result)
