@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 
 import dotenv
 import redis
@@ -19,7 +20,7 @@ def configure_logging(level: str) -> None:
 
 
 def run() -> int:
-    dotenv.load_dotenv(dotenv_path="../.env")
+    dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env")
     try:
         settings = WorkerSettings.from_env()
     except ConfigurationError as exc:
