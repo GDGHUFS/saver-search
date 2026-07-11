@@ -4,7 +4,8 @@ from pathlib import Path
 
 import dotenv
 import redis
-
+import os
+from pathlib import Path
 from src.config import ConfigurationError, WorkerSettings
 from src.kagi import KagiSearchClient
 from src.store import RedisResultStore
@@ -20,7 +21,8 @@ def configure_logging(level: str) -> None:
 
 
 def run() -> int:
-    dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env")
+    ROOT_DIR = Path(__file__).resolve().parents[1]
+    dotenv.load_dotenv(dotenv_path=ROOT_DIR.joinpath(".env"))
     try:
         settings = WorkerSettings.from_env()
     except ConfigurationError as exc:
