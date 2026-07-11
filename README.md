@@ -25,7 +25,7 @@ worker는 Kagi 응답을 검증하고 필요한 필드만 다음 형태로 Redis
 
 ## 실행
 
-Python 의존성을 설치하고 저장소 루트의 `.env`에 최소한 `APIKEY`를 설정한다.
+Python 의존성을 설치하고 저장소 루트에서 실행한다. 로컬 실행 시 저장소 루트의 `.env`를 자동으로 읽으며, 최소한 `APIKEY`가 필요하다. 컨테이너나 배포 환경에서는 `.env` 파일을 이미지에 포함하지 말고 환경 변수로 주입한다.
 
 ```shell
 python -m pip install -r requirements.txt
@@ -40,6 +40,22 @@ python -m src.main
 - worker: `SEARCH_MAX_MESSAGE_BYTES`, `SEARCH_MAX_RESULT_BYTES`, `SEARCH_BUSY_REQUEUE_DELAY`, `LOG_LEVEL`
 
 메시지와 Redis 계약의 상세 내용은 [`AGENTS.md`](AGENTS.md)를 참고한다.
+
+## 컨테이너
+
+이미지는 HTTP 포트를 열지 않는 장기 실행 worker로 동작하며, 기본 명령은 `python -m src.main`이다.
+
+로컬에서는 rootless Podman으로 빌드와 실행을 확인할 수 있다.
+
+```shell
+podman build -f Containerfile -t saver-search:local .
+podman run --rm --env-file .env \
+  --env REDIS_HOST=host.containers.internal \
+  --env RABBITMQ_HOST=host.containers.internal \
+  saver-search:local
+```
+
+Docker를 사용하는 배포 환경도 같은 이미지와 환경 변수 계약을 사용한다. 컨테이너 실행 사용자나 UID/GID는 배포 환경 정책에 맡기며, 이미지 자체에서 특정 사용자 모델을 강제하지 않는다.
 
 ## 검증
 
